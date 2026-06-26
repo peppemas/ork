@@ -1,0 +1,20 @@
+{
+  "disk": {
+    "path": "data.img",
+    "default_size": "100M"
+  },
+  "vm": {
+    "memory": "2G",
+    "kernel": "test-disk-kernel",
+    "initrd": "test-disk-initrd.img",
+    "cmdline": "test-disk-cmdline",
+    "qemu_path": "C:\\Program Files\\qemu\\qemu-system-x86_64.exe",
+    "accelerator": "auto"
+  },
+  "image": {
+    "linuxkit_path": "",
+    "template": "templates/test-disk.yaml",
+    "name": "test-disk",
+    "format": "kernel+initrd"
+  }
+}

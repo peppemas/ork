@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,17 +23,124 @@ import (
 	"github.com/diskfs/go-diskfs/filesystem"
 )
 
-const (
-	qemuDir  = `C:\Program Files\qemu`
-	diskName = "./data.img"
-	cmdlineF = "./test-disk-cmdline"
-	kernelF  = "./test-disk-kernel"
-	initrdF  = "./test-disk-initrd.img"
-)
+const configFileName = "ork.json"
+
+type Config struct {
+	Disk  DiskConfig  `json:"disk"`
+	VM    VMConfig    `json:"vm"`
+	Image ImageConfig `json:"image"`
+}
+
+type DiskConfig struct {
+	Path        string `json:"path"`
+	DefaultSize string `json:"default_size"`
+}
+
+type VMConfig struct {
+	Memory      string `json:"memory"`
+	Kernel      string `json:"kernel"`
+	Initrd      string `json:"initrd"`
+	Cmdline     string `json:"cmdline"`
+	QEMUPath    string `json:"qemu_path"`
+	Accelerator string `json:"accelerator"`
+}
+
+type ImageConfig struct {
+	LinuxKitPath string `json:"linuxkit_path"`
+	Template     string `json:"template"`
+	Name         string `json:"name"`
+	Format       string `json:"format"`
+}
+
+func defaultConfig() Config {
+	return Config{
+		Disk: DiskConfig{
+			Path:        "data.img",
+			DefaultSize: "5G",
+		},
+		VM: VMConfig{
+			Memory:      "2G",
+			Kernel:      "test-disk-kernel",
+			Initrd:      "test-disk-initrd.img",
+			Cmdline:     "test-disk-cmdline",
+			QEMUPath:    "",
+			Accelerator: "auto",
+		},
+		Image: ImageConfig{
+			LinuxKitPath: "",
+			Template:     "templates/test-disk.yaml",
+			Name:         "test-disk",
+			Format:       "kernel+initrd",
+		},
+	}
+}
+
+func loadConfig(configPath string) (Config, error) {
+	cfg := defaultConfig()
+
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return cfg, nil
+		}
+		return cfg, err
+	}
+
+	if err := json.Unmarshal(content, &cfg); err != nil {
+		return cfg, err
+	}
+
+	applyConfigDefaults(&cfg)
+	return cfg, nil
+}
+
+func applyConfigDefaults(cfg *Config) {
+	defaults := defaultConfig()
+
+	if strings.TrimSpace(cfg.Disk.Path) == "" {
+		cfg.Disk.Path = defaults.Disk.Path
+	}
+	if strings.TrimSpace(cfg.Disk.DefaultSize) == "" {
+		cfg.Disk.DefaultSize = defaults.Disk.DefaultSize
+	}
+	if strings.TrimSpace(cfg.VM.Memory) == "" {
+		cfg.VM.Memory = defaults.VM.Memory
+	}
+	if strings.TrimSpace(cfg.VM.Kernel) == "" {
+		cfg.VM.Kernel = defaults.VM.Kernel
+	}
+	if strings.TrimSpace(cfg.VM.Initrd) == "" {
+		cfg.VM.Initrd = defaults.VM.Initrd
+	}
+	if strings.TrimSpace(cfg.VM.Cmdline) == "" {
+		cfg.VM.Cmdline = defaults.VM.Cmdline
+	}
+	if strings.TrimSpace(cfg.VM.Accelerator) == "" {
+		cfg.VM.Accelerator = defaults.VM.Accelerator
+	}
+	if strings.TrimSpace(cfg.Image.Template) == "" {
+		cfg.Image.Template = defaults.Image.Template
+	}
+	if strings.TrimSpace(cfg.Image.Name) == "" {
+		cfg.Image.Name = defaults.Image.Name
+	}
+	if strings.TrimSpace(cfg.Image.Format) == "" {
+		cfg.Image.Format = defaults.Image.Format
+	}
+}
+
+func mustLoadConfig() Config {
+	cfg, err := loadConfig(configFileName)
+	if err != nil {
+		log.Fatalf("[ORK] Could not load %s: %v", configFileName, err)
+	}
+	return cfg
+}
 
 func printUsage() {
 	fmt.Println("ORK usage:")
 	fmt.Println("  ork create [size]               -> Create a virtual disk")
+	fmt.Println("  ork build-image [template] [name] -> Build the LinuxKit kernel/initrd")
 	fmt.Println("  ork start                       -> Start the micro-VM")
 	fmt.Println("  ork ls [dir]                    -> List a directory in data.img")
 	fmt.Println("  ork tree [dir]                  -> Recursively list a directory")
@@ -60,7 +169,7 @@ func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "create":
-			size := "2G"
+			size := mustLoadConfig().Disk.DefaultSize
 			if len(os.Args) > 2 {
 				size = os.Args[2]
 			}
@@ -198,6 +307,10 @@ func main() {
 			labelVirtualDisk(label)
 			return
 
+		case "build-image":
+			buildImage(os.Args[2:])
+			return
+
 		case "start":
 			launchVM()
 			return
@@ -212,7 +325,9 @@ func main() {
 }
 
 func readVirtualDiskFile(filePath string) {
-	absDiskPath, err := filepath.Abs(diskName)
+	cfg := mustLoadConfig()
+
+	absDiskPath, err := filepath.Abs(cfg.Disk.Path)
 	if err != nil {
 		log.Fatalf(
 			"[ORK] Could not resolve the disk path: %v",
@@ -301,7 +416,9 @@ func usageAndExit(command string) {
 }
 
 func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
-	absDiskPath, err := filepath.Abs(diskName)
+	cfg := mustLoadConfig()
+
+	absDiskPath, err := filepath.Abs(cfg.Disk.Path)
 	if err != nil {
 		log.Fatalf(
 			"[ORK] Could not resolve the disk path: %v",
@@ -702,14 +819,16 @@ func parseDiskSize(value string) (int64, error) {
 	return size, nil
 }
 
-// createVirtualDisk creates data.img and formats it directly as FAT32.
+// createVirtualDisk creates the configured disk image and formats it directly as FAT32.
 func createVirtualDisk(sizeStr string) {
+	cfg := mustLoadConfig()
+
 	size, err := parseDiskSize(sizeStr)
 	if err != nil {
 		log.Fatalf("[ORK] Invalid disk size: %v", err)
 	}
 
-	absPath, err := filepath.Abs(diskName)
+	absPath, err := filepath.Abs(cfg.Disk.Path)
 	if err != nil {
 		log.Fatalf("[ORK] Could not resolve the disk path: %v", err)
 	}
@@ -751,32 +870,148 @@ func createVirtualDisk(sizeStr string) {
 	fmt.Printf("[ORK] FAT32 disk ready: %s\n", absPath)
 }
 
-func launchVM() {
-	qemuPath := filepath.Join(qemuDir, "qemu-system-x86_64.exe")
-
-	// Create the disk automatically if it does not exist.
-	if _, err := os.Stat(diskName); os.IsNotExist(err) {
-		fmt.Printf("[ORK Warning] Disk %s does not exist. Creating a 5G disk automatically...\n", diskName)
-		createVirtualDisk("5G")
+func resolveQEMUBinary(cfg VMConfig, goos string, lookPath func(string) (string, error)) (string, error) {
+	qemuPath := strings.TrimSpace(cfg.QEMUPath)
+	if qemuPath != "" {
+		return qemuPath, nil
 	}
 
-	cmdlineBytes, err := os.ReadFile(cmdlineF)
+	candidates := []string{"qemu-system-x86_64"}
+	if goos == "windows" {
+		candidates = append(candidates, "qemu-system-x86_64.exe")
+	}
+
+	var lastErr error
+	for _, candidate := range candidates {
+		resolved, err := lookPath(candidate)
+		if err == nil {
+			return resolved, nil
+		}
+		lastErr = err
+	}
+
+	if lastErr == nil {
+		lastErr = exec.ErrNotFound
+	}
+	return "", fmt.Errorf("qemu-system-x86_64 was not found on PATH: %w", lastErr)
+}
+
+func resolveLinuxKitBinary(cfg ImageConfig, goos string, lookPath func(string) (string, error)) (string, error) {
+	linuxKitPath := strings.TrimSpace(cfg.LinuxKitPath)
+	if linuxKitPath != "" {
+		return linuxKitPath, nil
+	}
+
+	candidates := []string{"linuxkit"}
+	if goos == "windows" {
+		candidates = append(candidates, "linuxkit.exe")
+	}
+
+	var lastErr error
+	for _, candidate := range candidates {
+		resolved, err := lookPath(candidate)
+		if err == nil {
+			return resolved, nil
+		}
+		lastErr = err
+	}
+
+	if lastErr == nil {
+		lastErr = exec.ErrNotFound
+	}
+	return "", fmt.Errorf("linuxkit was not found on PATH: %w", lastErr)
+}
+
+func resolveAccelerator(configured string, goos string, stat func(string) (os.FileInfo, error)) string {
+	accelerator := strings.TrimSpace(configured)
+	if accelerator != "" && !strings.EqualFold(accelerator, "auto") {
+		return accelerator
+	}
+
+	switch goos {
+	case "windows":
+		return "whpx"
+	case "linux":
+		if _, err := stat("/dev/kvm"); err == nil {
+			return "kvm"
+		}
+		return "tcg"
+	case "darwin":
+		return "hvf"
+	default:
+		return "tcg"
+	}
+}
+
+func buildImage(args []string) {
+	cfg := mustLoadConfig()
+
+	template := cfg.Image.Template
+	if len(args) > 0 && strings.TrimSpace(args[0]) != "" {
+		template = args[0]
+	}
+
+	name := cfg.Image.Name
+	if len(args) > 1 && strings.TrimSpace(args[1]) != "" {
+		name = args[1]
+	}
+
+	linuxKitPath, err := resolveLinuxKitBinary(cfg.Image, runtime.GOOS, exec.LookPath)
 	if err != nil {
-		log.Fatalf("Error reading %s: %v", cmdlineF, err)
+		log.Fatalf("[ORK] LinuxKit not found. Install linuxkit and make it available on PATH, or set image.linuxkit_path in %s: %v", configFileName, err)
+	}
+
+	cmd := exec.Command(
+		linuxKitPath,
+		"build",
+		"--format", cfg.Image.Format,
+		"--name", name,
+		template,
+	)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	fmt.Printf("[ORK] Building LinuxKit image %q from %s...\n", name, template)
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("[ORK] LinuxKit image build failed: %v", err)
+	}
+}
+
+func launchVM() {
+	cfg := mustLoadConfig()
+
+	qemuPath, err := resolveQEMUBinary(cfg.VM, runtime.GOOS, exec.LookPath)
+	if err != nil {
+		log.Fatalf("[ORK] QEMU not found. Install qemu-system-x86_64 and make it available on PATH, or set vm.qemu_path in %s: %v", configFileName, err)
+	}
+
+	// Create the disk automatically if it does not exist.
+	if _, err := os.Stat(cfg.Disk.Path); os.IsNotExist(err) {
+		fmt.Printf("[ORK Warning] Disk %s does not exist. Creating a %s disk automatically...\n", cfg.Disk.Path, cfg.Disk.DefaultSize)
+		createVirtualDisk(cfg.Disk.DefaultSize)
+	} else if err != nil {
+		log.Fatalf("[ORK] Could not access disk %s: %v", cfg.Disk.Path, err)
+	}
+
+	cmdlineBytes, err := os.ReadFile(cfg.VM.Cmdline)
+	if err != nil {
+		log.Fatalf("Error reading %s: %v", cfg.VM.Cmdline, err)
 	}
 
 	cmdline := strings.TrimSpace(string(cmdlineBytes))
+	accelerator := resolveAccelerator(cfg.VM.Accelerator, runtime.GOOS, os.Stat)
 
 	args := []string{
-		"-accel", "whpx",
-		"-m", "2G",
-		"-kernel", kernelF,
-		"-initrd", initrdF,
+		"-accel", accelerator,
+		"-m", cfg.VM.Memory,
+		"-kernel", cfg.VM.Kernel,
+		"-initrd", cfg.VM.Initrd,
 		"-append", cmdline,
 		"-nographic",
 		"-no-reboot",
 		// Attach the virtual disk as a RAW virtio block drive.
-		"-drive", "file=" + diskName + ",if=virtio,format=raw",
+		"-drive", "file=" + cfg.Disk.Path + ",if=virtio,format=raw",
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -1,1 +1,2 @@
- .\bin\windows\linuxkit.exe build --format kernel+initrd .\templates\hello-world.yml
+@echo off
+.\ork.exe build-image %*
