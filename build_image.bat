@@ -1,0 +1,1 @@
+ .\bin\windows\linuxkit.exe build --format kernel+initrd .\templates\hello-world.yml

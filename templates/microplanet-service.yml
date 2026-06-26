@@ -1,0 +1,28 @@
+kernel:
+  image: linuxkit/kernel:6.6.y
+  cmdline: "console=ttyS0 quiet"
+
+init:
+  - linuxkit/init:v1.0.0
+  - linuxkit/runc:v1.0.0
+
+onboot:
+  - name: mount-data-disk
+    image: alpine:latest
+    binds:
+      - /dev:/dev
+      - /var/lib:/var/lib
+    capabilities:
+      - CAP_SYS_ADMIN
+    # Se il disco è vuoto lo formatta, altrimenti lo monta e basta su /var/lib/h2data
+    command: ["sh", "-c", "mkdir -p /var/lib/h2data && (mount /dev/vda /var/lib/h2data || (mkfs.ext4 /dev/vda && mount /dev/vda /var/lib/h2data))"]
+
+services:
+  - name: java-app
+    image: eclipse-temurin:21-jre-alpine
+    binds:
+      - /var/lib/h2data:/data # Montiamo l'intero hard disk dentro la cartella /data di Java
+    cwd: /data
+    # !!! NOTA QUI: Java lancia il jar prendendolo direttamente dal disco virtuale !!!
+    command: ["java", "-jar", "/data/vostro-servizio.jar", "--database.path=/data/h2db"]
+    restart: true

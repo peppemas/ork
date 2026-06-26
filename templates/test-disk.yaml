@@ -1,0 +1,58 @@
+kernel:
+  image: linuxkit/kernel:6.12.59
+  cmdline: "console=tty0 console=ttyS0"
+
+init:
+  - linuxkit/init:b5506cc74a6812dc40982cacfd2f4328f8a4b12a
+  - linuxkit/runc:9442aa234715e751a16144f1d4ae3fd1a00fd492
+  - linuxkit/containerd:ba19f64efd3331a8fd0a33e00eabd14f6ee1780e
+  - linuxkit/ca-certificates:256f1950df59f2f209e9f0b81374177409eb11de
+
+onboot:
+  - name: test-persistence
+    image: alpine:3.22
+
+    pid: host
+
+    capabilities:
+      - CAP_SYS_BOOT
+
+    runtime:
+      mkdir:
+        - /var/lib/data
+      mounts:
+        - type: vfat
+          source: /dev/vda
+          destination: /var/lib/data
+          options:
+            - rw
+
+    binds:
+      - /var/lib/data:/data
+
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+
+        echo "========================================"
+        echo "=== VERIFICA DISCO PERSISTENTE       ==="
+        echo "========================================"
+
+        if [ -f /data/test.txt ]; then
+          echo "File persistente trovato:"
+          cat /data/test.txt
+        else
+          echo "Prima esecuzione: creo il file persistente."
+          echo "Dati persistenti!" > /data/test.txt
+          echo "File creato:"
+          cat /data/test.txt
+        fi
+
+        sync
+        sleep 2
+
+        poweroff -f
+
+services: []
