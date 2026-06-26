@@ -30,25 +30,25 @@ const (
 )
 
 func printUsage() {
-	fmt.Println("Uso di ORK:")
-	fmt.Println("  ork create [dimensione]         -> Crea un disco virtuale")
-	fmt.Println("  ork start                       -> Avvia la micro-VM")
-	fmt.Println("  ork ls [dir]                    -> Lista una directory in data.img")
-	fmt.Println("  ork tree [dir]                  -> Lista ricorsivamente una directory")
-	fmt.Println("  ork stat <path>                 -> Mostra informazioni su un path")
-	fmt.Println("  ork read <file>                 -> Legge un file da data.img")
-	fmt.Println("  ork write <file> <testo>        -> Scrive un file in data.img")
-	fmt.Println("  ork append <file> <testo>       -> Aggiunge testo a un file")
-	fmt.Println("  ork put <host-file> <file>      -> Copia un file host dentro data.img")
-	fmt.Println("  ork get <file> [host-file]      -> Copia un file da data.img all'host")
-	fmt.Println("  ork cp <src> <dst>              -> Copia un file dentro data.img")
-	fmt.Println("  ork touch <file>                -> Crea o aggiorna un file vuoto")
-	fmt.Println("  ork mkdir <dir>                 -> Crea una directory")
-	fmt.Println("  ork rm [-r] <path>              -> Rimuove un file o directory")
-	fmt.Println("  ork mv <src> <dst>              -> Rinomina o sposta un path")
-	fmt.Println("  ork label [nome]                -> Legge o imposta l'etichetta FAT32")
+	fmt.Println("ORK usage:")
+	fmt.Println("  ork create [size]               -> Create a virtual disk")
+	fmt.Println("  ork start                       -> Start the micro-VM")
+	fmt.Println("  ork ls [dir]                    -> List a directory in data.img")
+	fmt.Println("  ork tree [dir]                  -> Recursively list a directory")
+	fmt.Println("  ork stat <path>                 -> Show path information")
+	fmt.Println("  ork read <file>                 -> Read a file from data.img")
+	fmt.Println("  ork write <file> <text>         -> Write a file in data.img")
+	fmt.Println("  ork append <file> <text>        -> Append text to a file")
+	fmt.Println("  ork put <host-file> <file>      -> Copy a host file into data.img")
+	fmt.Println("  ork get <file> [host-file]      -> Copy a file from data.img to the host")
+	fmt.Println("  ork cp <src> <dst>              -> Copy a file inside data.img")
+	fmt.Println("  ork touch <file>                -> Create or update an empty file")
+	fmt.Println("  ork mkdir <dir>                 -> Create a directory")
+	fmt.Println("  ork rm [-r] <path>              -> Remove a file or directory")
+	fmt.Println("  ork mv <src> <dst>              -> Rename or move a path")
+	fmt.Println("  ork label [name]                -> Read or set the FAT32 label")
 	fmt.Println()
-	fmt.Println("Esempi:")
+	fmt.Println("Examples:")
 	fmt.Println("  ork create 2G")
 	fmt.Println("  ork start")
 	fmt.Println("  ork ls /")
@@ -70,7 +70,7 @@ func main() {
 
 		case "read":
 			if len(os.Args) < 3 {
-				usageAndExit("ork read <percorso-file>")
+				usageAndExit("ork read <file-path>")
 			}
 
 			readVirtualDiskFile(os.Args[2])
@@ -96,7 +96,7 @@ func main() {
 
 		case "stat":
 			if len(os.Args) < 3 {
-				usageAndExit("ork stat <percorso>")
+				usageAndExit("ork stat <path>")
 			}
 
 			statVirtualDiskPath(os.Args[2])
@@ -104,7 +104,7 @@ func main() {
 
 		case "write":
 			if len(os.Args) < 4 {
-				usageAndExit("ork write <percorso-file> <testo>")
+				usageAndExit("ork write <file-path> <text>")
 			}
 
 			writeVirtualDiskFile(os.Args[2], []byte(strings.Join(os.Args[3:], " ")), false)
@@ -112,7 +112,7 @@ func main() {
 
 		case "append":
 			if len(os.Args) < 4 {
-				usageAndExit("ork append <percorso-file> <testo>")
+				usageAndExit("ork append <file-path> <text>")
 			}
 
 			writeVirtualDiskFile(os.Args[2], []byte(strings.Join(os.Args[3:], " ")), true)
@@ -120,7 +120,7 @@ func main() {
 
 		case "put":
 			if len(os.Args) < 4 {
-				usageAndExit("ork put <host-file> <percorso-file>")
+				usageAndExit("ork put <host-file> <file-path>")
 			}
 
 			putHostFile(os.Args[2], os.Args[3])
@@ -128,7 +128,7 @@ func main() {
 
 		case "get":
 			if len(os.Args) < 3 {
-				usageAndExit("ork get <percorso-file> [host-file]")
+				usageAndExit("ork get <file-path> [host-file]")
 			}
 
 			hostPath := ""
@@ -141,7 +141,7 @@ func main() {
 
 		case "cp":
 			if len(os.Args) < 4 {
-				usageAndExit("ork cp <sorgente> <destinazione>")
+				usageAndExit("ork cp <source> <destination>")
 			}
 
 			copyVirtualDiskFile(os.Args[2], os.Args[3])
@@ -149,7 +149,7 @@ func main() {
 
 		case "touch":
 			if len(os.Args) < 3 {
-				usageAndExit("ork touch <percorso-file>")
+				usageAndExit("ork touch <file-path>")
 			}
 
 			touchVirtualDiskFile(os.Args[2])
@@ -157,7 +157,7 @@ func main() {
 
 		case "mkdir":
 			if len(os.Args) < 3 {
-				usageAndExit("ork mkdir <percorso-directory>")
+				usageAndExit("ork mkdir <directory-path>")
 			}
 
 			makeVirtualDiskDir(os.Args[2])
@@ -165,14 +165,14 @@ func main() {
 
 		case "rm":
 			if len(os.Args) < 3 {
-				usageAndExit("ork rm [-r] <percorso>")
+				usageAndExit("ork rm [-r] <path>")
 			}
 
 			recursive := false
 			targetPath := os.Args[2]
 			if os.Args[2] == "-r" || os.Args[2] == "--recursive" {
 				if len(os.Args) < 4 {
-					usageAndExit("ork rm -r <percorso>")
+					usageAndExit("ork rm -r <path>")
 				}
 				recursive = true
 				targetPath = os.Args[3]
@@ -183,7 +183,7 @@ func main() {
 
 		case "mv":
 			if len(os.Args) < 4 {
-				usageAndExit("ork mv <sorgente> <destinazione>")
+				usageAndExit("ork mv <source> <destination>")
 			}
 
 			renameVirtualDiskPath(os.Args[2], os.Args[3])
@@ -215,7 +215,7 @@ func readVirtualDiskFile(filePath string) {
 	absDiskPath, err := filepath.Abs(diskName)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile determinare il percorso del disco: %v",
+			"[ORK] Could not resolve the disk path: %v",
 			err,
 		)
 	}
@@ -223,23 +223,23 @@ func readVirtualDiskFile(filePath string) {
 	if _, err := os.Stat(absDiskPath); err != nil {
 		if os.IsNotExist(err) {
 			log.Fatalf(
-				"[ORK] Il disco %s non esiste.",
+				"[ORK] Disk %s does not exist.",
 				absDiskPath,
 			)
 		}
 
 		log.Fatalf(
-			"[ORK] Impossibile accedere al disco %s: %v",
+			"[ORK] Could not access disk %s: %v",
 			absDiskPath,
 			err,
 		)
 	}
 
-	// I percorsi nel filesystem FAT vengono trattati come assoluti.
+	// FAT filesystem paths are treated as absolute.
 	filePath = strings.TrimSpace(filePath)
 
 	if filePath == "" {
-		log.Fatal("[ORK] Il percorso del file è vuoto.")
+		log.Fatal("[ORK] The file path is empty.")
 	}
 
 	if !strings.HasPrefix(filePath, "/") {
@@ -249,7 +249,7 @@ func readVirtualDiskFile(filePath string) {
 	virtualDisk, err := diskfs.Open(absDiskPath)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile aprire il disco %s: %v",
+			"[ORK] Could not open disk %s: %v",
 			absDiskPath,
 			err,
 		)
@@ -258,7 +258,7 @@ func readVirtualDiskFile(filePath string) {
 	fs, err := virtualDisk.GetFilesystem(0)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile aprire il filesystem FAT32: %v",
+			"[ORK] Could not open the FAT32 filesystem: %v",
 			err,
 		)
 	}
@@ -266,7 +266,7 @@ func readVirtualDiskFile(filePath string) {
 	file, err := fs.OpenFile(filePath, os.O_RDONLY)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile aprire %s dentro il disco: %v",
+			"[ORK] Could not open %s inside the disk: %v",
 			filePath,
 			err,
 		)
@@ -276,13 +276,13 @@ func readVirtualDiskFile(filePath string) {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile leggere %s: %v",
+			"[ORK] Could not read %s: %v",
 			filePath,
 			err,
 		)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
 	fmt.Printf("[ORK] File:  %s\n", filePath)
 	fmt.Println("------------------------------------------------------------")
 	fmt.Print(string(content))
@@ -295,7 +295,7 @@ func readVirtualDiskFile(filePath string) {
 }
 
 func usageAndExit(command string) {
-	fmt.Println("Uso:")
+	fmt.Println("Usage:")
 	fmt.Printf("  %s\n", command)
 	os.Exit(1)
 }
@@ -304,7 +304,7 @@ func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
 	absDiskPath, err := filepath.Abs(diskName)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile determinare il percorso del disco: %v",
+			"[ORK] Could not resolve the disk path: %v",
 			err,
 		)
 	}
@@ -312,13 +312,13 @@ func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
 	if _, err := os.Stat(absDiskPath); err != nil {
 		if os.IsNotExist(err) {
 			log.Fatalf(
-				"[ORK] Il disco %s non esiste.",
+				"[ORK] Disk %s does not exist.",
 				absDiskPath,
 			)
 		}
 
 		log.Fatalf(
-			"[ORK] Impossibile accedere al disco %s: %v",
+			"[ORK] Could not access disk %s: %v",
 			absDiskPath,
 			err,
 		)
@@ -327,7 +327,7 @@ func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
 	virtualDisk, err := diskfs.Open(absDiskPath, diskfs.WithOpenMode(diskfs.ReadWrite))
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile aprire il disco %s: %v",
+			"[ORK] Could not open disk %s: %v",
 			absDiskPath,
 			err,
 		)
@@ -336,7 +336,7 @@ func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
 	fs, err := virtualDisk.GetFilesystem(0)
 	if err != nil {
 		log.Fatalf(
-			"[ORK] Impossibile aprire il filesystem FAT32: %v",
+			"[ORK] Could not open the FAT32 filesystem: %v",
 			err,
 		)
 	}
@@ -347,7 +347,7 @@ func openVirtualDiskFilesystem() (filesystem.FileSystem, string) {
 func cleanVirtualPath(input string) string {
 	filePath := strings.TrimSpace(strings.ReplaceAll(input, "\\", "/"))
 	if filePath == "" {
-		log.Fatal("[ORK] Il percorso e' vuoto.")
+		log.Fatal("[ORK] The path is empty.")
 	}
 
 	if !strings.HasPrefix(filePath, "/") {
@@ -375,20 +375,20 @@ func listVirtualDiskDir(dirPath string) {
 	dirPath = cleanVirtualPath(dirPath)
 	entries, err := fs.ReadDir(fatDirectoryPath(dirPath))
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile listare %s: %v", dirPath, err)
+		log.Fatalf("[ORK] Could not list %s: %v", dirPath, err)
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
 		return strings.ToLower(entries[i].Name()) < strings.ToLower(entries[j].Name())
 	})
 
-	fmt.Printf("[ORK] Disco:     %s\n", absDiskPath)
+	fmt.Printf("[ORK] Disk:      %s\n", absDiskPath)
 	fmt.Printf("[ORK] Directory: %s\n", dirPath)
 	fmt.Println("------------------------------------------------------------")
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
-			log.Fatalf("[ORK] Impossibile leggere informazioni per %s: %v", entry.Name(), err)
+			log.Fatalf("[ORK] Could not read information for %s: %v", entry.Name(), err)
 		}
 
 		kind := "file"
@@ -406,7 +406,7 @@ func treeVirtualDiskDir(rootPath string) {
 	defer fs.Close()
 
 	rootPath = cleanVirtualPath(rootPath)
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
 	fmt.Printf("[ORK] Tree:  %s\n", rootPath)
 	fmt.Println("------------------------------------------------------------")
 	walkVirtualTree(fs, rootPath, "")
@@ -416,7 +416,7 @@ func treeVirtualDiskDir(rootPath string) {
 func walkVirtualTree(fs filesystem.FileSystem, dirPath string, indent string) {
 	entries, err := fs.ReadDir(fatDirectoryPath(dirPath))
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile listare %s: %v", dirPath, err)
+		log.Fatalf("[ORK] Could not list %s: %v", dirPath, err)
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
@@ -439,13 +439,13 @@ func statVirtualDiskPath(targetPath string) {
 	targetPath = cleanVirtualPath(targetPath)
 	info, err := fs.Stat(fatDirectoryPath(targetPath))
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile leggere stat di %s: %v", targetPath, err)
+		log.Fatalf("[ORK] Could not stat %s: %v", targetPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
 	fmt.Printf("Path:    %s\n", targetPath)
-	fmt.Printf("Nome:    %s\n", info.Name())
-	fmt.Printf("Tipo:    %s\n", fileKind(info.IsDir()))
+	fmt.Printf("Name:    %s\n", info.Name())
+	fmt.Printf("Type:    %s\n", fileKind(info.IsDir()))
 	fmt.Printf("Size:    %d\n", info.Size())
 	fmt.Printf("Mode:    %s\n", info.Mode())
 	fmt.Printf("ModTime: %s\n", info.ModTime().Format("2006-01-02 15:04:05"))
@@ -464,30 +464,30 @@ func writeVirtualDiskFile(filePath string, content []byte, appendMode bool) {
 
 	filePath = cleanVirtualPath(filePath)
 	flags := os.O_CREATE | os.O_RDWR | os.O_TRUNC
-	action := "Scritto"
+	action := "Wrote"
 	if appendMode {
 		flags = os.O_CREATE | os.O_RDWR | os.O_APPEND
-		action = "Aggiornato"
+		action = "Updated"
 	}
 
 	file, err := fs.OpenFile(filePath, flags)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile aprire %s in scrittura: %v", filePath, err)
+		log.Fatalf("[ORK] Could not open %s for writing: %v", filePath, err)
 	}
 	defer file.Close()
 
 	if _, err := io.Copy(file, bytes.NewReader(content)); err != nil {
-		log.Fatalf("[ORK] Impossibile scrivere %s: %v", filePath, err)
+		log.Fatalf("[ORK] Could not write %s: %v", filePath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
 	fmt.Printf("[ORK] %s %d byte in %s\n", action, len(content), filePath)
 }
 
 func putHostFile(hostPath string, diskPath string) {
 	content, err := os.ReadFile(hostPath)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile leggere %s: %v", hostPath, err)
+		log.Fatalf("[ORK] Could not read %s: %v", hostPath, err)
 	}
 
 	writeVirtualDiskFile(diskPath, content, false)
@@ -504,21 +504,21 @@ func getVirtualDiskFile(diskPath string, hostPath string) {
 
 	file, err := fs.OpenFile(diskPath, os.O_RDONLY)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile aprire %s dentro il disco: %v", diskPath, err)
+		log.Fatalf("[ORK] Could not open %s inside the disk: %v", diskPath, err)
 	}
 	defer file.Close()
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile leggere %s: %v", diskPath, err)
+		log.Fatalf("[ORK] Could not read %s: %v", diskPath, err)
 	}
 
 	if err := os.WriteFile(hostPath, content, 0o644); err != nil {
-		log.Fatalf("[ORK] Impossibile scrivere %s: %v", hostPath, err)
+		log.Fatalf("[ORK] Could not write %s: %v", hostPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Copiato %s -> %s (%d byte)\n", diskPath, hostPath, len(content))
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Copied %s -> %s (%d byte)\n", diskPath, hostPath, len(content))
 }
 
 func copyVirtualDiskFile(srcPath string, dstPath string) {
@@ -530,23 +530,23 @@ func copyVirtualDiskFile(srcPath string, dstPath string) {
 
 	src, err := fs.OpenFile(srcPath, os.O_RDONLY)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile aprire %s: %v", srcPath, err)
+		log.Fatalf("[ORK] Could not open %s: %v", srcPath, err)
 	}
 	defer src.Close()
 
 	dst, err := fs.OpenFile(dstPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile aprire %s in scrittura: %v", dstPath, err)
+		log.Fatalf("[ORK] Could not open %s for writing: %v", dstPath, err)
 	}
 	defer dst.Close()
 
 	written, err := io.Copy(dst, src)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile copiare %s in %s: %v", srcPath, dstPath, err)
+		log.Fatalf("[ORK] Could not copy %s to %s: %v", srcPath, dstPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Copiato %s -> %s (%d byte)\n", srcPath, dstPath, written)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Copied %s -> %s (%d byte)\n", srcPath, dstPath, written)
 }
 
 func touchVirtualDiskFile(filePath string) {
@@ -559,11 +559,11 @@ func makeVirtualDiskDir(dirPath string) {
 
 	dirPath = cleanVirtualPath(dirPath)
 	if err := fs.Mkdir(dirPath); err != nil {
-		log.Fatalf("[ORK] Impossibile creare directory %s: %v", dirPath, err)
+		log.Fatalf("[ORK] Could not create directory %s: %v", dirPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Directory creata: %s\n", dirPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Created directory: %s\n", dirPath)
 }
 
 func removeVirtualDiskPath(targetPath string, recursive bool) {
@@ -572,30 +572,30 @@ func removeVirtualDiskPath(targetPath string, recursive bool) {
 
 	targetPath = cleanVirtualPath(targetPath)
 	if targetPath == "/" {
-		log.Fatal("[ORK] Non puoi rimuovere la root del disco.")
+		log.Fatal("[ORK] You cannot remove the disk root.")
 	}
 
 	if recursive {
 		info, err := fs.Stat(fatDirectoryPath(targetPath))
 		if err != nil {
-			log.Fatalf("[ORK] Impossibile leggere stat di %s: %v", targetPath, err)
+			log.Fatalf("[ORK] Could not stat %s: %v", targetPath, err)
 		}
 		if info.IsDir() {
 			if err := removeVirtualDiskTree(fs, targetPath); err != nil {
-				log.Fatalf("[ORK] Impossibile rimuovere ricorsivamente %s: %v", targetPath, err)
+				log.Fatalf("[ORK] Could not recursively remove %s: %v", targetPath, err)
 			}
-			fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-			fmt.Printf("[ORK] Rimosso ricorsivamente: %s\n", targetPath)
+			fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+			fmt.Printf("[ORK] Recursively removed: %s\n", targetPath)
 			return
 		}
 	}
 
 	if err := fs.Remove(fatDirectoryPath(targetPath)); err != nil {
-		log.Fatalf("[ORK] Impossibile rimuovere %s: %v", targetPath, err)
+		log.Fatalf("[ORK] Could not remove %s: %v", targetPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Rimosso: %s\n", targetPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Removed: %s\n", targetPath)
 }
 
 func removeVirtualDiskTree(fs filesystem.FileSystem, dirPath string) error {
@@ -628,15 +628,15 @@ func renameVirtualDiskPath(srcPath string, dstPath string) {
 	srcPath = cleanVirtualPath(srcPath)
 	dstPath = cleanVirtualPath(dstPath)
 	if srcPath == "/" || dstPath == "/" {
-		log.Fatal("[ORK] Non puoi rinominare la root del disco.")
+		log.Fatal("[ORK] You cannot rename the disk root.")
 	}
 
 	if err := fs.Rename(fatDirectoryPath(srcPath), fatDirectoryPath(dstPath)); err != nil {
-		log.Fatalf("[ORK] Impossibile rinominare %s in %s: %v", srcPath, dstPath, err)
+		log.Fatalf("[ORK] Could not rename %s to %s: %v", srcPath, dstPath, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Rinominato %s -> %s\n", srcPath, dstPath)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Renamed %s -> %s\n", srcPath, dstPath)
 }
 
 func labelVirtualDisk(label string) {
@@ -645,23 +645,23 @@ func labelVirtualDisk(label string) {
 
 	label = strings.TrimSpace(label)
 	if label == "" {
-		fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
+		fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
 		fmt.Printf("[ORK] Label: %q\n", strings.TrimSpace(fs.Label()))
 		return
 	}
 
 	if err := fs.SetLabel(label); err != nil {
-		log.Fatalf("[ORK] Impossibile impostare label %q: %v", label, err)
+		log.Fatalf("[ORK] Could not set label %q: %v", label, err)
 	}
 
-	fmt.Printf("[ORK] Disco: %s\n", absDiskPath)
-	fmt.Printf("[ORK] Label impostata: %q\n", label)
+	fmt.Printf("[ORK] Disk: %s\n", absDiskPath)
+	fmt.Printf("[ORK] Label set: %q\n", label)
 }
 
 func parseDiskSize(value string) (int64, error) {
 	value = strings.TrimSpace(strings.ToUpper(value))
 	if value == "" {
-		return 0, errors.New("dimensione vuota")
+		return 0, errors.New("empty size")
 	}
 
 	multiplier := int64(1)
@@ -682,50 +682,49 @@ func parseDiskSize(value string) (int64, error) {
 
 	number, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("valore numerico non valido: %w", err)
+		return 0, fmt.Errorf("invalid numeric value: %w", err)
 	}
 
 	if number <= 0 {
-		return 0, errors.New("la dimensione deve essere maggiore di zero")
+		return 0, errors.New("size must be greater than zero")
 	}
 
 	size := number * multiplier
 
-	// FAT32 molto piccoli possono non essere validi o utili.
+	// Very small FAT32 filesystems may be invalid or not useful.
 	const minimumSize = 64 * 1024 * 1024
 	if size < minimumSize {
 		return 0, fmt.Errorf(
-			"dimensione troppo piccola: minimo consigliato 64M",
+			"size too small: recommended minimum is 64M",
 		)
 	}
 
 	return size, nil
 }
 
-// createVirtualDisk usa qemu-img per creare un disco RAW FAT32 nativo
-// createVirtualDisk crea un file data.img e lo formatta direttamente in FAT32 (vfat)
+// createVirtualDisk creates data.img and formats it directly as FAT32.
 func createVirtualDisk(sizeStr string) {
 	size, err := parseDiskSize(sizeStr)
 	if err != nil {
-		log.Fatalf("[ORK] Dimensione disco non valida: %v", err)
+		log.Fatalf("[ORK] Invalid disk size: %v", err)
 	}
 
 	absPath, err := filepath.Abs(diskName)
 	if err != nil {
-		log.Fatalf("[ORK] Impossibile risolvere il percorso del disco: %v", err)
+		log.Fatalf("[ORK] Could not resolve the disk path: %v", err)
 	}
 
 	if _, err := os.Stat(absPath); err == nil {
 		log.Fatalf(
-			"[ORK] Il disco %s esiste già. Rimuovilo esplicitamente per ricrearlo.",
+			"[ORK] Disk %s already exists. Remove it explicitly before recreating it.",
 			absPath,
 		)
 	} else if !os.IsNotExist(err) {
-		log.Fatalf("[ORK] Impossibile controllare il disco: %v", err)
+		log.Fatalf("[ORK] Could not check the disk: %v", err)
 	}
 
 	fmt.Printf(
-		"[ORK] Creazione disco FAT32 %s, dimensione %s...\n",
+		"[ORK] Creating FAT32 disk %s, size %s...\n",
 		absPath,
 		sizeStr,
 	)
@@ -736,35 +735,34 @@ func createVirtualDisk(sizeStr string) {
 		diskfs.SectorSizeDefault,
 	)
 	if err != nil {
-		log.Fatalf("[ORK] Creazione immagine RAW fallita: %v", err)
+		log.Fatalf("[ORK] RAW image creation failed: %v", err)
 	}
 
 	_, err = virtualDisk.CreateFilesystem(disk.FilesystemSpec{
-		// Partition 0 significa: filesystem sull'intero disco,
-		// senza MBR o GPT.
+		// Partition 0 means a filesystem over the whole disk, without MBR or GPT.
 		Partition: 0,
 		FSType:    filesystem.TypeFat32,
 	})
 	if err != nil {
 		_ = os.Remove(absPath)
-		log.Fatalf("[ORK] Formattazione FAT32 fallita: %v", err)
+		log.Fatalf("[ORK] FAT32 formatting failed: %v", err)
 	}
 
-	fmt.Printf("[ORK] Disco FAT32 pronto: %s\n", absPath)
+	fmt.Printf("[ORK] FAT32 disk ready: %s\n", absPath)
 }
 
 func launchVM() {
 	qemuPath := filepath.Join(qemuDir, "qemu-system-x86_64.exe")
 
-	// Controllo se il disco esiste, altrimenti avverte l'utente
+	// Create the disk automatically if it does not exist.
 	if _, err := os.Stat(diskName); os.IsNotExist(err) {
-		fmt.Printf("[ORK Warning] Il disco %s non esiste. Lo creo automaticamente da 5G...\n", diskName)
+		fmt.Printf("[ORK Warning] Disk %s does not exist. Creating a 5G disk automatically...\n", diskName)
 		createVirtualDisk("5G")
 	}
 
 	cmdlineBytes, err := os.ReadFile(cmdlineF)
 	if err != nil {
-		log.Fatalf("Errore nella lettura di %s: %v", cmdlineF, err)
+		log.Fatalf("Error reading %s: %v", cmdlineF, err)
 	}
 
 	cmdline := strings.TrimSpace(string(cmdlineBytes))
@@ -777,7 +775,7 @@ func launchVM() {
 		"-append", cmdline,
 		"-nographic",
 		"-no-reboot",
-		// Agganciamo il disco virtuale come drive virtio blocco RAW
+		// Attach the virtual disk as a RAW virtio block drive.
 		"-drive", "file=" + diskName + ",if=virtio,format=raw",
 	}
 
@@ -790,10 +788,10 @@ func launchVM() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println("[Orchestratore Go] Lancio della Micro-VM LinuxKit in corso...")
+	fmt.Println("[Go Orchestrator] Starting the LinuxKit micro-VM...")
 	fmt.Println("------------------------------------------------------------")
-	fmt.Println("Per chiudere QEMU: Ctrl+A, poi X")
-	fmt.Println("Oppure premi Ctrl+C per terminarlo dall'orchestratore.")
+	fmt.Println("To close QEMU: Ctrl+A, then X")
+	fmt.Println("Or press Ctrl+C to terminate it from the orchestrator.")
 	fmt.Println("------------------------------------------------------------")
 
 	err = cmd.Run()
@@ -803,15 +801,15 @@ func launchVM() {
 
 	switch {
 	case ctx.Err() != nil:
-		fmt.Println("[Orchestratore Go] Arresto richiesto dall'utente.")
+		fmt.Println("[Go Orchestrator] Shutdown requested by the user.")
 	case err == nil:
-		fmt.Println("[Orchestratore Go] La Micro-VM ha terminato correttamente.")
+		fmt.Println("[Go Orchestrator] The micro-VM exited successfully.")
 	default:
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			fmt.Printf("[Orchestratore Go] QEMU è terminato con codice %d.\n", exitErr.ExitCode())
+			fmt.Printf("[Go Orchestrator] QEMU exited with code %d.\n", exitErr.ExitCode())
 		} else {
-			log.Fatalf("Errore durante l'esecuzione della VM: %v", err)
+			log.Fatalf("Error while running the VM: %v", err)
 		}
 	}
 }
