@@ -14,7 +14,7 @@ onboot:
     command:
       - /bin/sh
       - -c
-      - 'echo "Hello World dal container generato con LinuxKit!"'
+      - 'echo "Hello World from the LinuxKit container!"'
 
 services:
   - name: getty
