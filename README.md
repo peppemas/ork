@@ -202,6 +202,7 @@ To add software to the VM (e.g. Java, Node.js), add a service container to the t
 
 ## Notes
 
+- Build the VM image with `ork build-image` on LINUX. LinuxKit has a bug on Windows that prevents it from building the initrd image correctly.
 - **`workspace.img` is persistent** across VM restarts. Only delete it if you want a clean slate (it will be recreated automatically on the next `ork start --daemon`).
 - **Rebuilding the image** (`ork build-image`) is only needed when you change the LinuxKit template. It is not needed when changing `ork.json` or your workspace files.
 - **Port 2222** on localhost is forwarded to the VM's port 22. If the port is in use, change `exec.ssh_port` in `ork.json`.
