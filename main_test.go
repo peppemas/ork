@@ -2,9 +2,13 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/diskfs/go-diskfs"
 )
 
 func TestLoadConfigUsesDefaultsWhenMissing(t *testing.T) {
@@ -22,7 +26,6 @@ func TestLoadConfigUsesDefaultsWhenMissing(t *testing.T) {
 func TestLoadConfigMergesPartialConfig(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "ork.json")
 	content := []byte(`{
-		"disk": { "path": "custom.img" },
 		"vm": { "memory": "4G", "accelerator": "tcg" },
 		"image": { "name": "custom-image" }
 	}`)
@@ -35,12 +38,6 @@ func TestLoadConfigMergesPartialConfig(t *testing.T) {
 		t.Fatalf("loadConfig returned error: %v", err)
 	}
 
-	if cfg.Disk.Path != "custom.img" {
-		t.Fatalf("expected custom disk path, got %q", cfg.Disk.Path)
-	}
-	if cfg.Disk.DefaultSize != "5G" {
-		t.Fatalf("expected default disk size, got %q", cfg.Disk.DefaultSize)
-	}
 	if cfg.VM.Memory != "4G" {
 		t.Fatalf("expected custom memory, got %q", cfg.VM.Memory)
 	}
@@ -55,6 +52,12 @@ func TestLoadConfigMergesPartialConfig(t *testing.T) {
 	}
 	if cfg.Image.Template != "templates/test-disk.yaml" {
 		t.Fatalf("expected default template, got %q", cfg.Image.Template)
+	}
+	if cfg.Workspace.Path != "workspace.img" {
+		t.Fatalf("expected default workspace path, got %q", cfg.Workspace.Path)
+	}
+	if cfg.Exec.SSHPort != 2222 {
+		t.Fatalf("expected default SSH port, got %d", cfg.Exec.SSHPort)
 	}
 }
 
@@ -72,6 +75,110 @@ func TestResolveQEMUBinaryUsesConfiguredPath(t *testing.T) {
 	}
 	if called {
 		t.Fatal("lookPath should not be called when qemu_path is configured")
+	}
+}
+
+func TestParseExecArgs(t *testing.T) {
+	workdir, command := parseExecArgs([]string{"--workdir", "/workspace/repo", "--", "git", "status"}, "/workspace")
+	if workdir != "/workspace/repo" {
+		t.Fatalf("workdir = %q, want /workspace/repo", workdir)
+	}
+	if strings.Join(command, " ") != "git status" {
+		t.Fatalf("command = %#v", command)
+	}
+
+	workdir, command = parseExecArgs([]string{"pwd"}, "/workspace")
+	if workdir != "/workspace" {
+		t.Fatalf("default workdir = %q", workdir)
+	}
+	if len(command) != 1 || command[0] != "pwd" {
+		t.Fatalf("command = %#v", command)
+	}
+}
+
+func TestRemoteShellCommandQuotesArguments(t *testing.T) {
+	got := remoteShellCommand([]string{"sh", "-lc", "echo 'hello world'"}, "/workspace/repo")
+	want := `cd '/workspace/repo' && exec 'sh' '-lc' 'echo '"'"'hello world'"'"''`
+	if got != want {
+		t.Fatalf("remoteShellCommand() = %q, want %q", got, want)
+	}
+}
+
+func TestBuildQEMUArgsIncludesWorkspaceAndSSHForward(t *testing.T) {
+	dir := t.TempDir()
+	cmdlinePath := filepath.Join(dir, "cmdline")
+	if err := os.WriteFile(cmdlinePath, []byte("console=ttyS0\n"), 0o644); err != nil {
+		t.Fatalf("write cmdline: %v", err)
+	}
+
+	cfg := defaultConfig()
+	cfg.Workspace.Path = "workspace.img"
+	cfg.VM.Cmdline = cmdlinePath
+	cfg.Exec.Host = "127.0.0.1"
+	cfg.Exec.SSHPort = 2200
+
+	args := strings.Join(buildQEMUArgs(cfg, true), "\x00")
+	if !strings.Contains(args, "file=workspace.img,if=virtio,format=raw") {
+		t.Fatalf("workspace drive missing from args: %q", args)
+	}
+	if !strings.Contains(args, "user,id=net0,hostfwd=tcp:127.0.0.1:2200-:22") {
+		t.Fatalf("SSH hostfwd missing from args: %q", args)
+	}
+	if !strings.Contains(args, "virtio-net-pci,netdev=net0") {
+		t.Fatalf("network device missing from args: %q", args)
+	}
+}
+
+func TestVMStateRoundTrip(t *testing.T) {
+	statePath := filepath.Join(t.TempDir(), ".ork", "vm.json")
+	state := VMState{
+		PID:           123,
+		SSHHost:       "127.0.0.1",
+		SSHPort:       2222,
+		WorkspacePath: "workspace.img",
+	}
+	if err := writeVMState(statePath, state); err != nil {
+		t.Fatalf("writeVMState: %v", err)
+	}
+	got, err := readVMState(statePath)
+	if err != nil {
+		t.Fatalf("readVMState: %v", err)
+	}
+	if got.PID != state.PID || got.SSHPort != state.SSHPort || got.WorkspacePath != state.WorkspacePath {
+		t.Fatalf("state roundtrip mismatch: %#v", got)
+	}
+}
+
+func TestCreateExt4WorkspaceSeedsAuthorizedKeys(t *testing.T) {
+	workspacePath := filepath.Join(t.TempDir(), "workspace.img")
+	publicKey := "ssh-rsa AAAATEST ork"
+	if err := createExt4Workspace(workspacePath, "64M", publicKey); err != nil {
+		t.Fatalf("createExt4Workspace: %v", err)
+	}
+
+	virtualDisk, err := diskfs.Open(workspacePath)
+	if err != nil {
+		t.Fatalf("open workspace: %v", err)
+	}
+	defer virtualDisk.Close()
+	fs, err := virtualDisk.GetFilesystem(0)
+	if err != nil {
+		t.Fatalf("open filesystem: %v", err)
+	}
+	defer fs.Close()
+
+	file, err := fs.OpenFile(".ork/authorized_keys", os.O_RDONLY)
+	if err != nil {
+		t.Fatalf("open authorized_keys: %v", err)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("read authorized_keys: %v", err)
+	}
+	if strings.TrimSpace(string(content)) != publicKey {
+		t.Fatalf("authorized_keys = %q, want %q", strings.TrimSpace(string(content)), publicKey)
 	}
 }
 

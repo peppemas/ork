@@ -9,50 +9,51 @@ init:
   - linuxkit/ca-certificates:256f1950df59f2f209e9f0b81374177409eb11de
 
 onboot:
-  - name: test-persistence
+  - name: network
     image: alpine:3.22
-
-    pid: host
-
+    net: host
     capabilities:
-      - CAP_SYS_BOOT
-
-    runtime:
-      mkdir:
-        - /var/lib/data
-      mounts:
-        - type: vfat
-          source: /dev/vda
-          destination: /var/lib/data
-          options:
-            - rw
-
-    binds:
-      - /var/lib/data:/data
-
+      - CAP_NET_ADMIN
     command:
       - /bin/sh
       - -c
       - |
-        set -eu
+        set -eux
+        ip link set eth0 up
+        ip addr add 10.0.2.15/24 dev eth0 2>/dev/null || true
+        ip route add default via 10.0.2.2 2>/dev/null || true
 
-        echo "========================================"
-        echo "=== VERIFICA DISCO PERSISTENTE       ==="
-        echo "========================================"
-
-        if [ -f /data/test.txt ]; then
-          echo "File persistente trovato:"
-          cat /data/test.txt
-        else
-          echo "Prima esecuzione: creo il file persistente."
-          echo "Dati persistenti!" > /data/test.txt
-          echo "File creato:"
-          cat /data/test.txt
-        fi
-
-        sync
-        sleep 2
-
-        poweroff -f
-
-services: []
+services:
+  - name: sshd
+    image: alpine:3.22
+    net: host
+    capabilities:
+      - CAP_SYS_ADMIN
+      - CAP_NET_BIND_SERVICE
+      - CAP_SETUID
+      - CAP_SETGID
+    runtime:
+      mkdir:
+        - /var/lib/workspace
+      mounts:
+        - type: ext4
+          source: /dev/vda
+          destination: /var/lib/workspace
+          options:
+            - rw
+    binds:
+      - /var/lib/workspace:/workspace
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eux
+        printf "nameserver 10.0.2.3\nnameserver 8.8.8.8\n" > /etc/resolv.conf
+        apk add --no-cache dropbear
+        mkdir -p /etc/dropbear /root/.ssh
+        dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+        dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key
+        cp /workspace/.ork/authorized_keys /root/.ssh/authorized_keys
+        chmod 700 /root/.ssh
+        chmod 600 /root/.ssh/authorized_keys
+        exec dropbear -F -E -s -p 22

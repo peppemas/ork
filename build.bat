@@ -1,1 +1,6 @@
-go build -buildvcs=false
+@echo off
+go test ./... 
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+set GOBIN=%cd%\bin
+go install -buildvcs=false ./...

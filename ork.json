@@ -1,8 +1,4 @@
 {
-  "disk": {
-    "path": "data.img",
-    "default_size": "100M"
-  },
   "vm": {
     "memory": "2G",
     "kernel": "test-disk-kernel",
@@ -16,5 +12,18 @@
     "template": "templates/test-disk.yaml",
     "name": "test-disk",
     "format": "kernel+initrd"
+  },
+  "workspace": {
+    "path": "workspace.img",
+    "default_size": "100M",
+    "mount": "/workspace"
+  },
+  "exec": {
+    "host": "127.0.0.1",
+    "ssh_port": 2222,
+    "user": "root",
+    "key_path": ".ork/id_rsa",
+    "state_path": ".ork/vm.json",
+    "ready_timeout": "60s"
   }
 }

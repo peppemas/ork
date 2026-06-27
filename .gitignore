@@ -1,3 +1,9 @@
+.ork
+.agents
+.claude
 bin
-data.img
 ork.exe
+test-disk-cmdline
+test-disk-initrd.img
+test-disk-kernel
+workspace.img

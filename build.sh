@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
-set -eu
+go test ./...
+GOBIN=$(pwd)/bin go install -buildvcs=false ./...
 
-./ork build-image "$@"
