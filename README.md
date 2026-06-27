@@ -51,8 +51,14 @@ QEMU must be on `PATH`, or set `vm.qemu_path` in `ork.json`. LinuxKit must be on
 
 ## Install QEMU
 
+### Windows
 ```bash
 winget install SoftwareFreedomConservancy.QEMU
+```
+
+### Linux
+```bash
+apt install qemu-system-x86_64
 ```
 
 ---
