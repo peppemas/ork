@@ -138,7 +138,7 @@ apt install qemu-system-x86_64
   },
   "workspace": {
     "path": "workspace.img",
-    "default_size": "10G",
+    "default_size": "100M",
     "mount": "/workspace"
   },
   "exec": {

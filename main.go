@@ -97,7 +97,7 @@ func defaultConfig() Config {
 		},
 		Workspace: WorkspaceConfig{
 			Path:        "workspace.img",
-			DefaultSize: "10G",
+			DefaultSize: "100M",
 			Mount:       "/workspace",
 		},
 		Exec: ExecConfig{
