@@ -1,16 +1,16 @@
 {
   "vm": {
     "memory": "2G",
-    "kernel": "test-disk-kernel",
-    "initrd": "test-disk-initrd.img",
-    "cmdline": "test-disk-cmdline",
+    "kernel": "orkvm-kernel",
+    "initrd": "orkvm-initrd.img",
+    "cmdline": "orkvm-cmdline",
     "qemu_path": "C:\\Program Files\\qemu\\qemu-system-x86_64.exe",
     "accelerator": "auto"
   },
   "image": {
     "linuxkit_path": "",
     "template": "templates/test-disk.yaml",
-    "name": "test-disk",
+    "name": "orkvm",
     "format": "kernel+initrd"
   },
   "workspace": {

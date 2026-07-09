@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -eu
 
-./bin//ork build-image "$@"
+./bin/ork build-image "$@"

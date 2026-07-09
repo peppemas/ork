@@ -32,7 +32,7 @@ Before issuing any other ORK command, ensure the daemon is running. This call is
 idempotent — if the VM is already up it exits immediately:
 
 ```powershell
-.\ork.exe start --daemon
+ork.exe start --daemon
 ```
 
 ---
@@ -41,29 +41,29 @@ idempotent — if the VM is already up it exits immediately:
 
 ```powershell
 # Single command — default workdir is /workspace
-.\ork.exe exec -- <command>
+ork.exe exec -- <command>
 
 # Shell one-liner
-.\ork.exe exec -- sh -c "echo hello && ls -la"
+ork.exe exec -- sh -c "echo hello && ls -la"
 
 # Override working directory
-.\ork.exe exec --workdir /tmp -- pwd
+ork.exe exec --workdir /tmp -- pwd
 
 # Arguments with spaces or flags — everything after -- is the command
-.\ork.exe exec -- java -jar /workspace/app.jar --port 8080
+ork.exe exec -- java -jar /workspace/app.jar --port 8080
 ```
 
 `exec` is synchronous and forwards the remote exit code. Capture output by redirecting
 inside the VM:
 
 ```powershell
-.\ork.exe exec -- sh -c "your-command 2>&1 | tee /workspace/output.log"
+ork.exe exec -- sh -c "your-command 2>&1 | tee /workspace/output.log"
 ```
 
 To fire-and-forget a background process (the SSH session closes, the process keeps running):
 
 ```powershell
-.\ork.exe exec -- sh -c "node /workspace/server.js >> /workspace/server.log 2>&1 &"
+ork.exe exec -- sh -c "node /workspace/server.js >> /workspace/server.log 2>&1 &"
 ```
 
 ---
@@ -72,16 +72,16 @@ To fire-and-forget a background process (the SSH session closes, the process kee
 
 ```powershell
 # Upload — defaults to /workspace/<filename>
-.\ork.exe put path\to\file.jar
+ork.exe put path\to\file.jar
 
 # Upload to an explicit remote path
-.\ork.exe put path\to\file.jar /workspace/libs/file.jar
+ork.exe put path\to\file.jar /workspace/libs/file.jar
 
 # Download to the current directory
-.\ork.exe get /workspace/output.txt
+ork.exe get /workspace/output.txt
 
 # Download to an explicit local path
-.\ork.exe get /workspace/report.pdf C:\Users\me\Desktop\report.pdf
+ork.exe get /workspace/report.pdf C:\Users\me\Desktop\report.pdf
 ```
 
 Binary files (`.jar`, `.png`, `.jpg`, `.zip`, …) transfer correctly — raw bytes, no encoding.
@@ -89,7 +89,7 @@ Binary files (`.jar`, `.png`, `.jpg`, `.zip`, …) transfer correctly — raw by
 For small text content you can skip `put` entirely and write inline:
 
 ```powershell
-.\ork.exe exec -- sh -c "printf 'console.log(42)\n' > /workspace/hello.js"
+ork.exe exec -- sh -c "printf 'console.log(42)\n' > /workspace/hello.js"
 ```
 
 ---
@@ -101,7 +101,7 @@ binary on `/workspace` so it survives — you only do this once per workspace di
 
 ```powershell
 # Download and extract the prebuilt Linux x64 binary
-.\ork.exe exec -- sh -c "
+ork.exe exec -- sh -c "
   cd /workspace &&
   wget -q https://nodejs.org/dist/v22.13.0/node-v22.13.0-linux-x64.tar.gz &&
   tar xzf node-v22.13.0-linux-x64.tar.gz &&
@@ -114,19 +114,19 @@ binary on `/workspace` so it survives — you only do this once per workspace di
 Use it via the full path (always works, no PATH setup needed):
 
 ```powershell
-.\ork.exe exec -- /workspace/.node/bin/node --version
-.\ork.exe exec -- /workspace/.node/bin/node /workspace/app.js
-.\ork.exe exec -- /workspace/.node/bin/npm install --prefix /workspace/myapp
+ork.exe exec -- /workspace/.node/bin/node --version
+ork.exe exec -- /workspace/.node/bin/node /workspace/app.js
+ork.exe exec -- /workspace/.node/bin/npm install --prefix /workspace/myapp
 ```
 
 Full upload → install → run → download cycle:
 
 ```powershell
-.\ork.exe put app.js
-.\ork.exe put package.json
-.\ork.exe exec -- sh -c "cd /workspace && /workspace/.node/bin/npm install"
-.\ork.exe exec -- /workspace/.node/bin/node /workspace/app.js
-.\ork.exe get /workspace/output.json
+ork.exe put app.js
+ork.exe put package.json
+ork.exe exec -- sh -c "cd /workspace && /workspace/.node/bin/npm install"
+ork.exe exec -- /workspace/.node/bin/node /workspace/app.js
+ork.exe get /workspace/output.json
 ```
 
 ---
@@ -136,7 +136,7 @@ Full upload → install → run → download cycle:
 For tools needed only in the current session, `apk add` is the fastest path:
 
 ```powershell
-.\ork.exe exec -- apk add --no-cache curl git python3 ffmpeg
+ork.exe exec -- apk add --no-cache curl git python3 ffmpeg
 ```
 
 These disappear after `ork stop`. For persistent tools, download prebuilt binaries to
@@ -148,16 +148,16 @@ These disappear after `ork stop`. For persistent tools, download prebuilt binari
 
 ```powershell
 # List files
-.\ork.exe exec -- ls -lh /workspace
+ork.exe exec -- ls -lh /workspace
 
 # Disk usage summary
-.\ork.exe exec -- df -h /workspace
+ork.exe exec -- df -h /workspace
 
 # Largest items
-.\ork.exe exec -- du -sh /workspace/* | sort -rh | head -20
+ork.exe exec -- du -sh /workspace/* | sort -rh | head -20
 
 # Find files by name
-.\ork.exe exec -- find /workspace -name "*.json"
+ork.exe exec -- find /workspace -name "*.json"
 ```
 
 ---
@@ -178,7 +178,7 @@ These disappear after `ork stop`. For persistent tools, download prebuilt binari
 ## Stopping the VM
 
 ```powershell
-.\ork.exe stop
+ork.exe stop
 ```
 
 Sends `poweroff` gracefully. The workspace disk is not affected.
@@ -199,5 +199,5 @@ recreated — re-run the download step above.
 
 **Workspace full**
 ```powershell
-.\ork.exe exec -- du -sh /workspace/* | sort -rh | head -20
+ork.exe exec -- du -sh /workspace/* | sort -rh | head -20
 ```
