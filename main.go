@@ -111,10 +111,32 @@ func defaultConfig() Config {
 	}
 }
 
+func exeDir() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(exePath), nil
+}
+
 func loadConfig(configPath string) (Config, error) {
 	cfg := defaultConfig()
 
-	content, err := os.ReadFile(configPath)
+	// For a bare/relative config filename, look next to the executable first,
+	// then fall back to the current working directory. Absolute paths are used
+	// as-is. Lookup order: executable directory, then cwd; absolute paths win.
+	resolvedPath := configPath
+	configPathIsRelative := !filepath.IsAbs(configPath)
+	if configPathIsRelative {
+		if dir, err := exeDir(); err == nil {
+			candidate := filepath.Join(dir, configPath)
+			if _, err := os.Stat(candidate); err == nil {
+				resolvedPath = candidate
+			}
+		}
+	}
+
+	content, err := os.ReadFile(resolvedPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return cfg, nil
@@ -127,7 +149,36 @@ func loadConfig(configPath string) (Config, error) {
 	}
 
 	applyConfigDefaults(&cfg)
+
+	// Resolve relative config paths against the executable directory so the
+	// program works when invoked from a different working directory. Absolute
+	// paths are left untouched.
+	if configPathIsRelative {
+		if dir, err := exeDir(); err == nil {
+			resolveRelativeConfigPaths(dir, &cfg)
+		}
+	}
+
 	return cfg, nil
+}
+
+func resolveRelativePath(baseDir, p string) string {
+	if p == "" || filepath.IsAbs(p) {
+		return p
+	}
+	return filepath.Join(baseDir, p)
+}
+
+func resolveRelativeConfigPaths(baseDir string, cfg *Config) {
+	cfg.VM.Kernel = resolveRelativePath(baseDir, cfg.VM.Kernel)
+	cfg.VM.Initrd = resolveRelativePath(baseDir, cfg.VM.Initrd)
+	cfg.VM.Cmdline = resolveRelativePath(baseDir, cfg.VM.Cmdline)
+	cfg.VM.QEMUPath = resolveRelativePath(baseDir, cfg.VM.QEMUPath)
+	cfg.Workspace.Path = resolveRelativePath(baseDir, cfg.Workspace.Path)
+	cfg.Image.LinuxKitPath = resolveRelativePath(baseDir, cfg.Image.LinuxKitPath)
+	cfg.Image.Template = resolveRelativePath(baseDir, cfg.Image.Template)
+	cfg.Exec.KeyPath = resolveRelativePath(baseDir, cfg.Exec.KeyPath)
+	cfg.Exec.StatePath = resolveRelativePath(baseDir, cfg.Exec.StatePath)
 }
 
 func applyConfigDefaults(cfg *Config) {

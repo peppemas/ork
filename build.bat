@@ -2,5 +2,5 @@
 go test ./... 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-set GOBIN=%cd%\bin
+set GOBIN=%cd%\
 go install -buildvcs=false ./...
