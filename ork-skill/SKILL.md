@@ -1,5 +1,5 @@
 ---
-name: ork
+name: ork-skill
 description: >
   Use this skill whenever you need a real Linux environment to run code, execute shell
   commands, install packages, or process files — and you are on a Windows host.
