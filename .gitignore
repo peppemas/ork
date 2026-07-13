@@ -1,9 +1,11 @@
 .ork
 .agents
 .claude
+.rocket
+*.log
 bin
 ork.exe
-test-disk-cmdline
-test-disk-initrd.img
-test-disk-kernel
+orkvm-cmdline
+orkvm-initrd.img
+orkvm-kernel
 workspace.img
